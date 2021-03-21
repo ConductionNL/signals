@@ -27,6 +27,8 @@ from signals.apps.signals.models.location import (
 from signals.apps.signals.models.mixins import CreatedUpdatedModel
 from signals.apps.signals.models.note import Note
 from signals.apps.signals.models.priority import Priority
+# current POC relating to backend defined questions
+from signals.apps.signals.models.q2 import Q2
 from signals.apps.signals.models.question import Question
 from signals.apps.signals.models.reporter import Reporter
 from signals.apps.signals.models.routing_expression import RoutingExpression
@@ -73,6 +75,7 @@ __all__ = [
     'Note',
     'Question',
     'Priority',
+    'Q2',
     'Reporter',
     'Signal',
     'ServiceLevelObjective',

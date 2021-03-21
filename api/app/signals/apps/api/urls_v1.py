@@ -12,6 +12,7 @@ from signals.apps.api.views import (
     PrivateCsvViewSet,
     PrivateDepartmentViewSet,
     PrivateExpressionViewSet,
+    PrivateQ2ViewSet,
     PrivateSignalAttachmentsViewSet,
     PrivateSignalViewSet,
     PrivateSourcesViewSet,
@@ -67,7 +68,7 @@ private_router.register(r'private/areas', PrivateAreasViewSet, basename='private
 private_router.register(r'private/expressions', PrivateExpressionViewSet, basename='private-expression')
 private_router.register(r'private/sources', PrivateSourcesViewSet, basename='private-sources')
 private_router.register(r'private/csv', PrivateCsvViewSet, basename='private-csv')
-
+private_router.register(r'private/q2s', PrivateQ2ViewSet, basename='private-questions')
 
 # Combined API
 base_router = SignalsRouterVersion1()

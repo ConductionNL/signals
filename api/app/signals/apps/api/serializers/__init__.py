@@ -14,9 +14,11 @@ from signals.apps.api.serializers.departments import (
     PrivateDepartmentSerializerDetail,
     PrivateDepartmentSerializerList
 )
-from signals.apps.api.serializers.expression import ExpressionContextSerializer
-from signals.apps.api.serializers.question import PublicQuestionSerializerDetail
-from signals.apps.api.serializers.signal import (
+from signals.apps.api.v1.serializers.empty import PublicEmptySerializer
+from signals.apps.api.v1.serializers.expression import ExpressionContextSerializer
+from signals.apps.api.v1.serializers.q2 import PrivateQ2SerializerDetail
+from signals.apps.api.v1.serializers.question import PublicQuestionSerializerDetail
+from signals.apps.api.v1.serializers.signal import (
     AbridgedChildSignalSerializer,
     PrivateSignalSerializerDetail,
     PrivateSignalSerializerList,
@@ -61,4 +63,10 @@ __all__ = [
     'StateStatusMessageTemplateListSerializer',
     'StateStatusMessageTemplateSerializer',
     'StoredSignalFilterSerializer',
+    'PrivateCategorySerializer',
+    'PublicQuestionSerializerDetail',
+    'PrivateQ2SerializerDetail',
+    'AbridgedChildSignalSerializer',
+    'ExpressionContextSerializer',
+    'PublicEmptySerializer'
 ]
