@@ -4,7 +4,7 @@ from datapunt_api.rest import HALPagination
 from rest_framework import viewsets
 
 from signals.apps.api.generics import mixins
-from signals.apps.api.v1.serializers import PrivateQ2SerializerDetail
+from signals.apps.api.serializers import PrivateQ2SerializerDetail
 from signals.apps.signals.models import Q2
 
 
