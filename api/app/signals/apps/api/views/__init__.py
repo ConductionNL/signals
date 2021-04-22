@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (C) 2019 - 2021 Gemeente Amsterdam
+from signals.apps.api.views.answer import PublicAnswerViewSet
 from signals.apps.api.views.area import PrivateAreasViewSet, PublicAreasViewSet
 from signals.apps.api.views.attachment import (
     PrivateSignalAttachmentsViewSet,
@@ -28,6 +29,7 @@ from signals.apps.api.views.status_message_template import StatusMessageTemplate
 from signals.apps.api.views.stored_signal_filter import StoredSignalFilterViewSet
 
 __all__ = (
+    'PublicAnswerViewSet',
     'PublicSignalAttachmentsViewSet',
     'PrivateSignalAttachmentsViewSet',
     'PublicSignalMapViewSet',

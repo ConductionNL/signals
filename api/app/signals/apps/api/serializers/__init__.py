@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (C) 2019 - 2021 Gemeente Amsterdam
+from signals.apps.api.serializers.answer import AnswerDeserializer, AnswerSerializer
 from signals.apps.api.serializers.attachment import (
     PrivateSignalAttachmentSerializer,
     PublicSignalAttachmentSerializer,
@@ -39,6 +40,8 @@ from signals.apps.api.serializers.stored_signal_filter import StoredSignalFilter
 
 __all__ = [
     'AbridgedChildSignalSerializer',
+    'AnswerDeserializer',
+    'AnswerSerializer',
     'CategoryHALSerializer',
     'ExpressionContextSerializer',
     'HistoryHalSerializer',
