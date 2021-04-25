@@ -10,6 +10,7 @@ ANSWER_SESSION_TTL = 2 * 60 * 60  # Two hours default
 class AnswerSession(models.Model):
     created_at = models.DateTimeField(editable=False, auto_now_add=True)
     submit_before = models.DateTimeField(blank=True, null=True)
+    first_question = models.ForeignKey('Q2', on_delete=models.CASCADE, null=True)
 
     started_at = models.DateTimeField(null=True)
     ttl_seconds = models.IntegerField(default=ANSWER_SESSION_TTL)

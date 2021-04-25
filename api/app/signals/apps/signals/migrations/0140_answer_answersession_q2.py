@@ -14,20 +14,6 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='AnswerSession',
-            fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('created_at', models.DateTimeField(auto_now_add=True)),
-                ('submit_before', models.DateTimeField(blank=True, null=True)),
-                ('started_at', models.DateTimeField(null=True)),
-                ('ttl_seconds', models.IntegerField(default=7200)),
-                ('token', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-            ],
-            options={
-                'ordering': ('-created_at',),
-            },
-        ),
-        migrations.CreateModel(
             name='Q2',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
@@ -38,6 +24,24 @@ class Migration(migrations.Migration):
                 ('required', models.BooleanField(default=False)),
                 ('path', models.CharField(max_length=255)),
             ],
+        ),
+        migrations.CreateModel(
+            name='AnswerSession',
+            fields=[
+                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('created_at', models.DateTimeField(auto_now_add=True)),
+                ('submit_before', models.DateTimeField(blank=True, null=True)),
+                ('started_at', models.DateTimeField(null=True)),
+                ('ttl_seconds', models.IntegerField(default=7200)),
+                ('token', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
+                (
+                    'first_question',
+                    models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='signals.q2')
+                ),
+            ],
+            options={
+                'ordering': ('-created_at',),
+            },
         ),
         migrations.CreateModel(
             name='Answer',

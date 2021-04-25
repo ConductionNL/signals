@@ -25,3 +25,8 @@ class AnswerDeserializer(serializers.Serializer):
     key = serializers.CharField(max_length=255)
     answer = serializers.JSONField()
     session_token = serializers.UUIDField(required=False)
+
+
+class AnswerSessionSerializer(serializers.Serializer):
+    token = serializers.UUIDField()
+    key = serializers.CharField(source='first_question.key')

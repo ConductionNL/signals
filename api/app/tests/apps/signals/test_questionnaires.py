@@ -111,6 +111,7 @@ class TestQuestionnaire(SignalsBaseApiTestCase):
 class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
     QUESTIONS_ENDPOINT = '/signals/v1/private/q2s/'
     ANSWERS_ENDPOINT = '/signals/v1/public/answers/'
+    ANSWER_SESSIONS_ENDPOINT = '/signals/v1/public/answer-sessions/{uuid}/'
 
     def setUp(self):
         self.q_start = Q2.objects.create(
@@ -232,12 +233,71 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         self.assertEqual(AnswerSession.objects.count(), 0)
 
     def test_kto_prototype(self):
+        """
+        Pretend our questions are requested feedback.
+        """
+        # Idea is that instead of a Feedback object we prepare an AnswerSession
+        # and request the reporter to fill it out some time later. For
+        # expediency we assume that the link to the questionnaire was shared
+        # somehow (likely by email as with KTO).
         now = timezone.now()
-        prepared_session = AnswerSession.objects.create(submit_before=now + timedelta(days=14))  # noqa
+        prepared_session = AnswerSession.objects.create(
+            submit_before=now + timedelta(days=14),
+            first_question=self.q_start,
+        )
 
-        # something like:
-        # create questions
-        # create a AnswerSession beforehand
-        # set clock to later
-        # submit answers until next=None is reached
-        # extracting JSON blobs / final submission TBD (possibly with a special Question)
+        # Retrieve prepared AnswerSession
+        url = self.ANSWER_SESSIONS_ENDPOINT.format(uuid=prepared_session.token)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        response_json = response.json()
+        key = response_json['key']
+        session_token = response_json['token']
+        self.assertEqual(key, self.q_start.key)
+        self.assertEqual(uuid.UUID(session_token), prepared_session.token)
+
+        # Retrieve first question referenced by prepared AnswerSession
+        url = self.QUESTIONS_ENDPOINT + f'?key={key}'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        response_json = response.json()
+        self.assertEqual(response_json['results'][0]['key'], key)
+
+        # Answer the first question
+        answer = {
+            'key': key,
+            'answer': 'yes',
+            'session_token': session_token
+        }
+
+        response = self.client.post(self.ANSWERS_ENDPOINT, data=answer, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        response_json = response.json()
+        next_key = response_json['next_key']
+        self.assertEqual(next_key, 'q_yes')  # see setUp method
+
+        # Retrieve and answer the second question
+        url = self.QUESTIONS_ENDPOINT + f'?key={next_key}'
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        response_json = response.json()
+
+        # answer
+        answer = {
+            'key': response_json['results'][0]['key'],
+            'answer': 'WHATEVER',
+            'session_token': session_token
+        }
+        response = self.client.post(self.ANSWERS_ENDPOINT, data=answer, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        response_json = response.json()
+        self.assertEqual(response_json['next_key'], None)  # questionnaire fully filled out
+
+        # TODO:
+        # * extend this with checks for time that one can take to fill out the
+        #   form (using AnswerSession.ttl_seconds)
+        # * add checks for session expiry (using AnswerSession.submit_before)

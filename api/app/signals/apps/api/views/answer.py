@@ -2,10 +2,15 @@
 # Copyright (C) 2020 - 2021 Vereniging van Nederlandse Gemeenten, Gemeente Amsterdam
 from rest_framework import viewsets
 from rest_framework.response import Response
-from rest_framework.status import HTTP_201_CREATED
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
-from signals.apps.api.serializers import AnswerDeserializer, AnswerSerializer
+from signals.apps.api.serializers import (
+    AnswerDeserializer,
+    AnswerSerializer,
+    AnswerSessionSerializer
+)
 from signals.apps.services.domain.qa import QuestionAnswerService
+from signals.apps.signals.models import AnswerSession
 
 
 class PublicAnswerViewSet(viewsets.ViewSet):
@@ -24,3 +29,10 @@ class PublicAnswerViewSet(viewsets.ViewSet):
         # Don't need the success headers with a Location entry, because answers
         # have no API endpoint.
         return Response(out, status=HTTP_201_CREATED)
+
+
+class PublicAnswerSessionViewSet(viewsets.ViewSet):
+    def retrieve(self, requests, pk=None):
+        # TODO: clean-up the lookup arg handling here
+        answer_session = AnswerSession.objects.get(token=pk)
+        return Response(AnswerSessionSerializer(answer_session).data, status=HTTP_200_OK)
