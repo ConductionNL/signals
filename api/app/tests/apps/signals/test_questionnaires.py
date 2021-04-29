@@ -80,7 +80,7 @@ class TestQuestionnaire(SignalsBaseApiTestCase):
         next_conditional = {
                 'shortLabel': 'kort label',
                 'label': 'lang label',
-                'next': [{'key': 'next_question_a', 'value_path': 'shortLabel', 'value_matches': 'A'}]
+                'next': [{'key': 'next_question_a', 'answer': 'A'}]
         }
 
         Q2.objects.create(

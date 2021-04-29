@@ -15,57 +15,9 @@ from django.core.exceptions import ValidationError as django_validation_error
 from jsonschema.exceptions import SchemaError as js_schema_error
 from jsonschema.exceptions import ValidationError as js_validation_error
 
-# Basic JSON schema for question
-BASIC_SCHEMA = {
-    'type': 'object',
-    'properties': {
-        'label': {'type': 'string'},  # for display on questionnaire
-        'shortLabel': {'type': 'string'},  # for display on detail page
-        'next': {
-            'type': ['array', 'null'],
-            'items': {
-                'type': 'object',
-                'properties': {
-                    'key': {'type': 'string'},  # reference to another question
-                    'value_path': {'type': ['string', 'null']},  # reference to the answer value to consider
-                    'value_matches': {'type': ['string', 'null']}  # value to compare to, for matching rule
-                }
-            }
-        }
-    },
-    'required': ['label', 'shortLabel'],
-    'additionalProperties': False,
-}
-
 
 class FieldType:
     """All field types should subclass this, so that they become visible as a choice"""
-    def clean(self, payload):
-        return payload  # implement cleaning rules in subclass --- probably using JSONSchema
-
-
-class PlainText(FieldType):
-    choice = ('plain_text', 'PlainText')  # TODO: derive from class name
-    payload_schema = {
-        'type': 'object',
-        'properties': {
-            'label': {'type': 'string'},
-            'shortLabel': {'type': 'string'},
-            'next': {
-                'type': 'array',
-                'items': {
-                    'type': 'object',
-                    'properties': {
-                        'key': {'type': 'string'},  # reference to another question
-                        'answer': {'type': ['string', 'null']}  # TDB: is null meaningfull?
-                    }
-                }
-            }
-        },
-        'required': ['label', 'shortLabel'],
-        'additionalProperties': False,
-    }
-    submission_schema = {'type': 'string'}
 
     def clean(self, payload):
         jsonschema.validate(payload, self.payload_schema)  # !! what is the output? probably
@@ -81,6 +33,60 @@ class PlainText(FieldType):
             msg = 'Submitted answer does not validate.'
             raise django_validation_error(msg)
         return data
+
+
+class PlainText(FieldType):
+    choice = ('plain_text', 'PlainText')  # TODO: derive from class name
+    submission_schema = {'type': 'string'}
+
+    payload_schema = {
+        'type': 'object',
+        'properties': {
+            'label': {'type': 'string'},
+            'shortLabel': {'type': 'string'},
+            'next': {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'key': {'type': 'string'},
+                        'answer': submission_schema  # leave out "answer" if next is unconditional
+                    },
+                    'required': ['key'],
+                    'additionalProperties': False
+                }
+            }
+        },
+        'required': ['label', 'shortLabel'],
+        'additionalProperties': False,
+    }
+
+
+class Integer(FieldType):
+    choice = ('integer', 'Integer')
+    submission_schema = {'type': 'integer'}
+
+    payload_schema = {
+        'type': 'object',
+        'properties': {
+            'label': {'type': 'string'},
+            'shortLabel': {'type': 'string'},
+            'next': {
+                'type': 'array',
+                'items': {
+                    'type': 'object',
+                    'properties': {
+                        'key': {'type': 'string'},
+                        'answer': submission_schema  # leave out "answer" if next is unconditional
+                    },
+                    'required': ['key'],
+                    'additionalProperties': False
+                }
+            }
+        },
+        'required': ['label', 'shortLabel'],
+        'additionalProperties': False,
+    }
 
 
 def field_type_choices():
