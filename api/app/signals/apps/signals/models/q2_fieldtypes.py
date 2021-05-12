@@ -15,6 +15,9 @@ from django.core.exceptions import ValidationError as django_validation_error
 from jsonschema.exceptions import SchemaError as js_schema_error
 from jsonschema.exceptions import ValidationError as js_validation_error
 
+_FIELD_TYPE_CHOICES = None
+_FIELD_TYPE_CLASSES = None
+
 
 class FieldType:
     """All field types should subclass this, so that they become visible as a choice"""
@@ -89,34 +92,31 @@ class Integer(FieldType):
     }
 
 
-def field_type_choices():
+def init():
+    """Initialize field type mapping caches."""
     current_module = sys.modules[__name__]
-    seen = set()
+    field_type_choices = {}
+    field_type_classes = {}
 
-    choices = []
     for _, item in inspect.getmembers(current_module):
         if inspect.isclass(item) and issubclass(item, FieldType) and item != FieldType:
-            if item.choice[0] in seen:
+            if item.choice[0] in field_type_choices:
                 raise Exception(f'Class{item.__name__} is bad, repeated choice[0] of {item.choice[0]} !')
-            seen.add(item)
-            choices.append(item.choice)
 
-    return choices
+            k, v = item.choice
+            field_type_choices[k] = v
+            field_type_classes[k] = item
+
+    return field_type_choices, field_type_classes
+
+
+def field_type_choices():
+    """All field types defined."""
+    field_type_choices, _ = init()
+    return [(k, v) for k, v in field_type_choices.items()]
 
 
 def get_field_type_class(question):
     '''Grab FieldType subclass that defines this question's behavior.'''
-    current_module = sys.modules[__name__]
-    to_find = question.field_type
-    seen = set()
-
-    # This scan through the module should be cached, move this code at a later point.
-    for _, item in inspect.getmembers(current_module):
-        if inspect.isclass(item) and issubclass(item, FieldType) and item != FieldType:
-            if item.choice[0] in seen:
-                raise Exception(f'Class{item.__name__} is bad, repeated choice[0] of {item.choice[0]} !')
-            seen.add(item)
-
-            if item.choice[0] == to_find:
-                return item
-    return None  # <- we want some relevant exception here
+    _, field_type_classes = init()
+    return field_type_classes.get(question.field_type, None)
