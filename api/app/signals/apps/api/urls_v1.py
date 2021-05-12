@@ -16,7 +16,7 @@ from signals.apps.api.views import (
     PrivateSignalAttachmentsViewSet,
     PrivateSignalViewSet,
     PrivateSourcesViewSet,
-    PublicAnswerSessionViewSet,
+    PublicQASessionViewSet,
     PublicAnswerViewSet,
     PublicAreasViewSet,
     PublicCategoryViewSet,
@@ -48,7 +48,7 @@ public_router.register(r'public/feedback/standard_answers', StandardAnswerViewSe
 public_router.register(r'public/feedback/forms', FeedbackViewSet, basename='feedback-forms')
 public_router.register(r'public/areas', PublicAreasViewSet, basename='public-areas')
 public_router.register(r'public/answers', PublicAnswerViewSet, basename='public-answers')
-public_router.register(r'public/answer-sessions', PublicAnswerSessionViewSet, basename='public-answer-sessions')
+public_router.register(r'public/qa-sessions', PublicQASessionViewSet, basename='public-qa-sessions')
 public_router.register(r'public/q2s', PublicQ2ViewSet, basename='public-questions')
 
 public_categories = public_router.register(r'public/terms/categories', PublicCategoryViewSet,

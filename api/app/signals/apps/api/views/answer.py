@@ -8,10 +8,10 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FO
 from signals.apps.api.serializers import (
     AnswerDeserializer,
     AnswerSerializer,
-    AnswerSessionSerializer
+    QASessionSerializer
 )
-from signals.apps.services.domain.qa import QuestionAnswerService
-from signals.apps.signals.models import AnswerSession
+from signals.apps.services.domain.qa import QASessionService
+from signals.apps.signals.models import QASession
 
 
 class PublicAnswerViewSet(viewsets.ViewSet):
@@ -20,7 +20,7 @@ class PublicAnswerViewSet(viewsets.ViewSet):
         deserializer.is_valid()
 
         token = deserializer.data.get('session_token', None)
-        answer = QuestionAnswerService.create_answer(
+        answer = QASessionService.process_answer(
             deserializer.data['key'],
             deserializer.data['answer'],
             token
@@ -32,12 +32,12 @@ class PublicAnswerViewSet(viewsets.ViewSet):
         return Response(out, status=HTTP_201_CREATED)
 
 
-class PublicAnswerSessionViewSet(viewsets.ViewSet):
+class PublicQASessionViewSet(viewsets.ViewSet):
     def retrieve(self, requests, pk=None):
         # TODO: clean-up the lookup arg handling here
-        answer_session = AnswerSession.objects.get(token=pk)
+        answer_session = QASession.objects.get(token=pk)
         if answer_session.submit_before is not None:
             if answer_session.submit_before <= timezone.now():
                 return Response(status=HTTP_404_NOT_FOUND)  # TODO: add proper body
 
-        return Response(AnswerSessionSerializer(answer_session).data, status=HTTP_200_OK)
+        return Response(QASessionSerializer(answer_session).data, status=HTTP_200_OK)

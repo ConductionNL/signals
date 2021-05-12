@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (C) 2019 - 2021 Gemeente Amsterdam
-from signals.apps.signals.models.answer import Answer, AnswerSession
+from signals.apps.signals.models.answer import Answer, QASession
 from signals.apps.signals.models.area import Area, AreaType
 from signals.apps.signals.models.attachment import Attachment
 from signals.apps.signals.models.buurt import Buurt
@@ -46,7 +46,7 @@ from signals.apps.signals.models.type import Type
 # Satisfy Flake8 (otherwise complaints about unused imports):
 __all__ = [
     'Answer',
-    'AnswerSession',
+    'QASession',
     'Area',
     'AreaType',
     'Attachment',

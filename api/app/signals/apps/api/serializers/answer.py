@@ -27,6 +27,6 @@ class AnswerDeserializer(serializers.Serializer):
     session_token = serializers.UUIDField(required=False)
 
 
-class AnswerSessionSerializer(serializers.Serializer):
+class QASessionSerializer(serializers.Serializer):
     token = serializers.UUIDField()
     key = serializers.CharField(source='first_question.key')

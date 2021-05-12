@@ -7,7 +7,7 @@ from django.contrib.gis.db import models
 ANSWER_SESSION_TTL = 2 * 60 * 60  # Two hours default
 
 
-class AnswerSession(models.Model):
+class QASession(models.Model):
     created_at = models.DateTimeField(editable=False, auto_now_add=True)
     submit_before = models.DateTimeField(blank=True, null=True)
     first_question = models.ForeignKey('Q2', on_delete=models.CASCADE, null=True)
@@ -25,7 +25,7 @@ class AnswerSession(models.Model):
 class Answer(models.Model):
     created_at = models.DateTimeField(editable=False, auto_now_add=True)
 
-    session = models.ForeignKey(AnswerSession, on_delete=models.CASCADE, null=True)
+    session = models.ForeignKey(QASession, on_delete=models.CASCADE, null=True)
     question = models.ForeignKey('Q2', on_delete=models.CASCADE)
     answer = models.JSONField()
 

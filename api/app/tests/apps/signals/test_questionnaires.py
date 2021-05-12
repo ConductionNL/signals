@@ -7,7 +7,7 @@ from django.utils import timezone
 from freezegun import freeze_time
 
 # TODO: replace Q2 with Question
-from signals.apps.signals.models import Q2, Answer, AnswerSession
+from signals.apps.signals.models import Q2, Answer, QASession
 from tests.test import SignalsBaseApiTestCase
 
 PLAIN_TEXT_TEMPLATE = {
@@ -112,7 +112,7 @@ class TestQuestionnaire(SignalsBaseApiTestCase):
 class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
     QUESTIONS_ENDPOINT = '/signals/v1/public/q2s/'
     ANSWERS_ENDPOINT = '/signals/v1/public/answers/'
-    ANSWER_SESSIONS_ENDPOINT = '/signals/v1/public/answer-sessions/{uuid}/'
+    QA_SESSIONS_ENDPOINT = '/signals/v1/public/qa-sessions/{uuid}/'
 
     def setUp(self):
         self.q_start = Q2.objects.create(
@@ -153,7 +153,7 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         """
         Test conditional question-answer flow (only happy flow).
         """
-        self.assertEqual(AnswerSession.objects.count(), 0)
+        self.assertEqual(QASession.objects.count(), 0)
 
         # Retrieve the first question
         response = self.client.get(f'{self.QUESTIONS_ENDPOINT}?key=q_yesno')
@@ -202,11 +202,11 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
 
         # some database level checks
         self.assertEqual(Answer.objects.count(), 2)
-        self.assertEqual(AnswerSession.objects.count(), 1)
+        self.assertEqual(QASession.objects.count(), 1)
 
     def test_answer_session_does_not_exist(self):
         """
-        Questions cannot be submitted to SIA API if non-existant AnswerSession is referenced
+        Questions cannot be submitted to SIA API if non-existant QASession is referenced
         """
         # Retrieve the first question
         response = self.client.get(f'{self.QUESTIONS_ENDPOINT}?key=q_yesno')
@@ -216,10 +216,10 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         self.assertEqual(response_json['count'], 1)  # we expect one question (key is unique and exists)
         question_json = response_json['results'][0]
 
-        # answer it, observe that using a non-existing AnswerSession yields a HTTP 400
+        # answer it, observe that using a non-existing QASession yields a HTTP 400
         random_token = uuid.uuid4()
-        with self.assertRaises(AnswerSession.DoesNotExist):
-            AnswerSession.objects.get(token=random_token)
+        with self.assertRaises(QASession.DoesNotExist):
+            QASession.objects.get(token=random_token)
 
         answer = {
             'key': question_json['key'],
@@ -227,30 +227,30 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
             'session_token': random_token,
         }
         response = self.client.post(self.ANSWERS_ENDPOINT, data=answer, format='json')
-        with self.assertRaises(AnswerSession.DoesNotExist):
-            AnswerSession.objects.get(token=random_token)
+        with self.assertRaises(QASession.DoesNotExist):
+            QASession.objects.get(token=random_token)
         self.assertEqual(response.status_code, 400)
 
         # some database level checks
         self.assertEqual(Answer.objects.count(), 0)
-        self.assertEqual(AnswerSession.objects.count(), 0)
+        self.assertEqual(QASession.objects.count(), 0)
 
     def test_kto_prototype(self):
         """
         Pretend our questions are requested feedback.
         """
-        # Idea is that instead of a Feedback object we prepare an AnswerSession
+        # Idea is that instead of a Feedback object we prepare an QASession
         # and request the reporter to fill it out some time later. For
         # expediency we assume that the link to the questionnaire was shared
         # somehow (likely by email as with KTO).
         now = timezone.now()
-        prepared_session = AnswerSession.objects.create(
+        prepared_session = QASession.objects.create(
             submit_before=now + timedelta(days=14),
             first_question=self.q_start,
         )
 
-        # Retrieve prepared AnswerSession
-        url = self.ANSWER_SESSIONS_ENDPOINT.format(uuid=prepared_session.token)
+        # Retrieve prepared QASession
+        url = self.QA_SESSIONS_ENDPOINT.format(uuid=prepared_session.token)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -260,7 +260,7 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         self.assertEqual(key, self.q_start.key)
         self.assertEqual(uuid.UUID(session_token), prepared_session.token)
 
-        # Retrieve first question referenced by prepared AnswerSession
+        # Retrieve first question referenced by prepared QASession
         url = self.QUESTIONS_ENDPOINT + f'?key={key}'
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
@@ -300,11 +300,11 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         response_json = response.json()
         self.assertEqual(response_json['next_key'], None)  # questionnaire fully filled out
 
-        self.assertEqual(AnswerSession.objects.count(), 1)  # no new session should have been created
+        self.assertEqual(QASession.objects.count(), 1)  # no new session should have been created
 
     def test_kto_prototype_too_slow(self):
         with freeze_time('2021-05-12 12:00:00'):
-            prepared_session = AnswerSession.objects.create(
+            prepared_session = QASession.objects.create(
                 first_question=self.q_start,
             )
 
@@ -317,7 +317,7 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
             self.assertEqual(response.status_code, 201)
 
         with freeze_time('2021-05-12 18:00:00'):
-            # Try to continue session after more than 2 hours (standard AnswerSession time to live is 2 hours)
+            # Try to continue session after more than 2 hours (standard QASession time to live is 2 hours)
             # That should not be allowed, because it was after the time to live had passed.
             answer = {
                 'key': prepared_session.first_question.key,
@@ -331,13 +331,13 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         # Set deadline in the future
         with freeze_time('2021-05-12 12:00:00'):
             now = timezone.now()
-            prepared_session = AnswerSession.objects.create(
+            prepared_session = QASession.objects.create(
                 submit_before=now + timedelta(days=14),
                 first_question=self.q_start,
             )
 
-        # AnswerSessions are hidden when they expire
-        url = self.ANSWER_SESSIONS_ENDPOINT.format(uuid=prepared_session.token)
+        # QASessions are hidden when they expire
+        url = self.QA_SESSIONS_ENDPOINT.format(uuid=prepared_session.token)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
 
@@ -354,13 +354,13 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         # Set deadline in the past
         with freeze_time('2021-05-12 12:00:00'):
             now = timezone.now()
-            prepared_session = AnswerSession.objects.create(
+            prepared_session = QASession.objects.create(
                 submit_before=now - timedelta(days=14),
                 first_question=self.q_start,
             )
 
-        # AnswerSessions are hidden when they expire
-        url = self.ANSWER_SESSIONS_ENDPOINT.format(uuid=prepared_session.token)
+        # QASessions are hidden when they expire
+        url = self.QA_SESSIONS_ENDPOINT.format(uuid=prepared_session.token)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 404)
 

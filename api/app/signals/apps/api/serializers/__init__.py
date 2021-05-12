@@ -3,7 +3,7 @@
 from signals.apps.api.serializers.answer import (
     AnswerDeserializer,
     AnswerSerializer,
-    AnswerSessionSerializer
+    QASessionSerializer
 )
 from signals.apps.api.serializers.attachment import (
     PrivateSignalAttachmentSerializer,
@@ -46,7 +46,7 @@ __all__ = [
     'AbridgedChildSignalSerializer',
     'AnswerDeserializer',
     'AnswerSerializer',
-    'AnswerSessionSerializer',
+    'QASessionSerializer',
     'CategoryHALSerializer',
     'ExpressionContextSerializer',
     'HistoryHalSerializer',
