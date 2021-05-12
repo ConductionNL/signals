@@ -58,7 +58,7 @@ class PlainText(FieldType):
                     'required': ['key'],
                     'additionalProperties': False
                 }
-            }
+            }  # Leave next out completely if this is the last question
         },
         'required': ['label', 'shortLabel'],
         'additionalProperties': False,

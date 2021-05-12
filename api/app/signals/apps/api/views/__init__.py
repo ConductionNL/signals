@@ -15,7 +15,7 @@ from signals.apps.api.views.expression import PrivateExpressionViewSet
 from signals.apps.api.views.ml_tool_proxy import LegacyMlPredictCategoryView
 from signals.apps.api.views.namespace import NamespaceView
 from signals.apps.api.views.pdf import GeneratePdfView
-from signals.apps.api.views.q2 import PrivateQ2ViewSet
+from signals.apps.api.views.q2 import PrivateQ2ViewSet, PublicQ2ViewSet
 from signals.apps.api.views.questions import PublicQuestionViewSet
 from signals.apps.api.views.signal import (
     PrivateSignalViewSet,
@@ -42,6 +42,7 @@ __all__ = (
     'PrivateCsvViewSet',
     'PublicQuestionViewSet',
     'PrivateQ2ViewSet',
+    'PublicQ2ViewSet',
     # 'MlPredictCategoryView',  # disabled for now
     'LegacyMlPredictCategoryView',
     'NamespaceView',

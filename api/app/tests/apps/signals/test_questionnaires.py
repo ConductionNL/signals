@@ -4,6 +4,7 @@ import uuid
 from datetime import timedelta
 
 from django.utils import timezone
+from freezegun import freeze_time
 
 # TODO: replace Q2 with Question
 from signals.apps.signals.models import Q2, Answer, AnswerSession
@@ -109,7 +110,7 @@ class TestQuestionnaire(SignalsBaseApiTestCase):
 
 
 class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
-    QUESTIONS_ENDPOINT = '/signals/v1/private/q2s/'
+    QUESTIONS_ENDPOINT = '/signals/v1/public/q2s/'
     ANSWERS_ENDPOINT = '/signals/v1/public/answers/'
     ANSWER_SESSIONS_ENDPOINT = '/signals/v1/public/answer-sessions/{uuid}/'
 
@@ -152,6 +153,8 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         """
         Test conditional question-answer flow (only happy flow).
         """
+        self.assertEqual(AnswerSession.objects.count(), 0)
+
         # Retrieve the first question
         response = self.client.get(f'{self.QUESTIONS_ENDPOINT}?key=q_yesno')
         self.assertEqual(response.status_code, 200)
@@ -297,7 +300,75 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         response_json = response.json()
         self.assertEqual(response_json['next_key'], None)  # questionnaire fully filled out
 
-        # TODO:
-        # * extend this with checks for time that one can take to fill out the
-        #   form (using AnswerSession.ttl_seconds)
-        # * add checks for session expiry (using AnswerSession.submit_before)
+        self.assertEqual(AnswerSession.objects.count(), 1)  # no new session should have been created
+
+    def test_kto_prototype_too_slow(self):
+        with freeze_time('2021-05-12 12:00:00'):
+            prepared_session = AnswerSession.objects.create(
+                first_question=self.q_start,
+            )
+
+            answer = {
+                'key': prepared_session.first_question.key,
+                'answer': 'yes',
+                'session_token': prepared_session.token
+            }
+            response = self.client.post(self.ANSWERS_ENDPOINT, data=answer, format='json')
+            self.assertEqual(response.status_code, 201)
+
+        with freeze_time('2021-05-12 18:00:00'):
+            # Try to continue session after more than 2 hours (standard AnswerSession time to live is 2 hours)
+            # That should not be allowed, because it was after the time to live had passed.
+            answer = {
+                'key': prepared_session.first_question.key,
+                'answer': 'yes',
+                'session_token': prepared_session.token
+            }
+            response = self.client.post(self.ANSWERS_ENDPOINT, data=answer, format='json')
+            self.assertEqual(response.status_code, 400)
+
+    def test_kto_prototype_in_time(self):
+        # Set deadline in the future
+        with freeze_time('2021-05-12 12:00:00'):
+            now = timezone.now()
+            prepared_session = AnswerSession.objects.create(
+                submit_before=now + timedelta(days=14),
+                first_question=self.q_start,
+            )
+
+        # AnswerSessions are hidden when they expire
+        url = self.ANSWER_SESSIONS_ENDPOINT.format(uuid=prepared_session.token)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+
+        # Referencing a non-expired session should yield HTTP 201
+        answer = {
+            'key': prepared_session.first_question.key,
+            'answer': 'yes',
+            'session_token': prepared_session.token
+        }
+        response = self.client.post(self.ANSWERS_ENDPOINT, data=answer, format='json')
+        self.assertEqual(response.status_code, 201)
+
+    def test_kto_prototype_too_late(self):
+        # Set deadline in the past
+        with freeze_time('2021-05-12 12:00:00'):
+            now = timezone.now()
+            prepared_session = AnswerSession.objects.create(
+                submit_before=now - timedelta(days=14),
+                first_question=self.q_start,
+            )
+
+        # AnswerSessions are hidden when they expire
+        url = self.ANSWER_SESSIONS_ENDPOINT.format(uuid=prepared_session.token)
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 404)
+
+        # Referencing a expired session should yield HTTP 400
+        answer = {
+            'key': prepared_session.first_question.key,
+            'answer': 'yes',
+            'session_token': prepared_session.token
+        }
+        response = self.client.post(self.ANSWERS_ENDPOINT, data=answer, format='json')
+        self.assertEqual(response.status_code, 400)

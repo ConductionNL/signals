@@ -20,6 +20,7 @@ from signals.apps.api.views import (
     PublicAnswerViewSet,
     PublicAreasViewSet,
     PublicCategoryViewSet,
+    PublicQ2ViewSet,
     PublicQuestionViewSet,
     PublicSignalAttachmentsViewSet,
     PublicSignalMapViewSet,
@@ -48,6 +49,7 @@ public_router.register(r'public/feedback/forms', FeedbackViewSet, basename='feed
 public_router.register(r'public/areas', PublicAreasViewSet, basename='public-areas')
 public_router.register(r'public/answers', PublicAnswerViewSet, basename='public-answers')
 public_router.register(r'public/answer-sessions', PublicAnswerSessionViewSet, basename='public-answer-sessions')
+public_router.register(r'public/q2s', PublicQ2ViewSet, basename='public-questions')
 
 public_categories = public_router.register(r'public/terms/categories', PublicCategoryViewSet,
                                            basename='public-maincategory')

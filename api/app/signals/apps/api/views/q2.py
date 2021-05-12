@@ -24,3 +24,14 @@ class PrivateQ2ViewSet(mixins.RetrieveModelMixin, mixins.CreateModelMixin, mixin
 
     filter_backends = (DjangoFilterBackend,)
     filterset_class = Q2FilterSet
+
+
+class PublicQ2ViewSet(mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+    queryset = Q2.objects.order_by('-id')
+
+    serializer_class = PrivateQ2SerializerDetail  # TODO: replace with public version?
+    serializer_detail_class = PrivateQ2SerializerDetail
+    pagination_class = HALPagination
+
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = Q2FilterSet
