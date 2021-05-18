@@ -87,9 +87,9 @@ class QASessionService:
         # clients overwrite questions).
         all_answers = list(
             Answer.objects.filter(session=session)
-                .order_by('question_id')
-                .distinct('question_id')
-                .select_related('question')
+            .order_by('question_id')
+            .distinct('question_id')
+            .select_related('question')
         )
         all_question_ids = [answer.question_id for answer in all_answers]
 
@@ -108,13 +108,44 @@ class QASessionService:
 
         return answers
 
-    # flake8: noqa
     @staticmethod
     def get_questions(session_token):
         """
         Retrieve all questions associated with a QASession, return list.
         """
+        # NOTE: this does not check whether the graph formed by the questions
+        # is actually a valid graph (in this context whether it is a-cyclical).
+        # This only returns the connected component reachable from the first
+        # question. If there are cycles they are not detected.
         session = QASessionService.get_qa_session(session_token)
 
-        first_question = session.first_question
-        # !!! protect against cycles!
+        all_questions = {
+            session.first_question.key: session.first_question
+        }
+        to_visit = set(session.first_question.get_all_next_keys())
+
+        while to_visit:
+            key = to_visit.pop()
+            question = Q2.objects.get(key=key)  # this can raise ...
+            all_questions[key] = question
+
+            next_keys = question.get_all_next_keys()
+            for next_key in next_keys:
+                if next_key not in all_questions:
+                    to_visit.add(next_key)
+
+        return all_questions.values()
+
+    @staticmethod
+    def as_extra_properties(session_token):
+        answers = QASessionService.get_answers(session_token)
+
+        extra_properties = []
+        for answer in answers:
+            props = {
+                'id': answer.question.key,
+                # TODO add correct payload
+            }
+            extra_properties.append(props)
+
+        return extra_properties

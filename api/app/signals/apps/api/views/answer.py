@@ -2,6 +2,7 @@
 # Copyright (C) 2020 - 2021 Vereniging van Nederlandse Gemeenten, Gemeente Amsterdam
 from django.utils import timezone
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
 
@@ -37,3 +38,15 @@ class PublicQASessionViewSet(viewsets.ViewSet):
                 return Response(status=HTTP_404_NOT_FOUND)  # TODO: add proper body
 
         return Response(QASessionSerializer(answer_session).data, status=HTTP_200_OK)
+
+    @action(detail=True, url_path=r'answers/?$')
+    def answers(self, request, pk=None):
+        answer_session = QASession.objects.get(token=pk)
+        if answer_session.submit_before is not None:
+            if answer_session.submit_before <= timezone.now():
+                return Response(status=HTTP_404_NOT_FOUND)  # TODO: add proper body
+
+        answers = QASessionService.get_answers(answer_session.token)
+        out = AnswerSerializer(answers, many=True).data
+
+        return Response(out, status=HTTP_200_OK)

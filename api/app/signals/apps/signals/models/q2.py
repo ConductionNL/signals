@@ -57,9 +57,9 @@ class Q2(models.Model):
                 return item['key']
         return None
 
-    def get_potential_next_keys(self):
+    def get_all_next_keys(self):
         """
-        Find all potential next questions.
+        Find all potential next question keys.
         """
         payload_next = self.payload.get('next', [])
         return [item['key'] for item in payload_next]

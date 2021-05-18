@@ -7,6 +7,7 @@ from django.utils import timezone
 from freezegun import freeze_time
 
 # TODO: replace Q2 with Question
+from signals.apps.services.domain.qa import QASessionService
 from signals.apps.signals.models import Q2, Answer, QASession
 from tests.test import SignalsBaseApiTestCase
 
@@ -113,6 +114,7 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
     QUESTIONS_ENDPOINT = '/signals/v1/public/q2s/'
     ANSWERS_ENDPOINT = '/signals/v1/public/answers/'
     QA_SESSIONS_ENDPOINT = '/signals/v1/public/qa-sessions/{uuid}/'
+    QA_SESSION_ANSWERS_ENDPOINT = '/signals/v1/public/qa-sessions/{uuid}/answers/'
 
     def setUp(self):
         self.q_start = Q2.objects.create(
@@ -131,7 +133,7 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
 
         self.q_yes = Q2.objects.create(
             field_type='plain_text',
-            path='extra_properties.',
+            path='extra_properties.b',
             key='q_yes',
             payload={
                 'shortLabel': 'yes',
@@ -141,7 +143,7 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
 
         self.q_no = Q2.objects.create(
             field_type='plain_text',
-            path='extra_properties.',
+            path='extra_properties.c',
             key='q_no',
             payload={
                 'shortLabel': 'no',
@@ -382,7 +384,6 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         # TBD: do we only return "reachable" questions (i.e. those that are in
         # the chain of questions and answers starting at
         # QASession.first_question).
-        from signals.apps.services.domain.qa import QASessionService
 
         # ----------------------
         # ------ REFACTOR ME ---
@@ -441,3 +442,96 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
 
         answers = QASessionService.get_answers(session_token)
         self.assertEqual(len(answers), 2)
+
+    def test_get_answers_api(self):
+        # ----------------------
+        # ------ REFACTOR ME ---
+        self.assertEqual(QASession.objects.count(), 0)
+
+        # Retrieve the first question
+        response = self.client.get(f'{self.QUESTIONS_ENDPOINT}?key=q_yesno')
+        self.assertEqual(response.status_code, 200)
+
+        response_json = response.json()
+        self.assertEqual(response_json['count'], 1)  # we expect one question (key is unique and exists)
+        question_json = response_json['results'][0]
+
+        # answer it
+        answer = {
+            'key': question_json['key'],
+            'answer': 'yes',
+            'session': None,
+        }
+        response = self.client.post(self.ANSWERS_ENDPOINT, data=answer, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        response_json = response.json()
+        self.assertEqual(response_json['key'], 'q_yesno')
+        self.assertEqual(response_json['answer'], 'yes')
+        self.assertEqual(response_json['next_key'], 'q_yes')
+        self.assertIn('session_token', response_json)
+        session_token = response_json['session_token']
+
+        # retrieve second question:
+        next_key = response_json['next_key']
+        response = self.client.get(f'{self.QUESTIONS_ENDPOINT}?key={next_key}')
+        self.assertEqual(response.status_code, 200)
+
+        # answer it
+        answer_2 = {
+            'key': next_key,
+            'answer': 'Yes happy now!',
+            'session_token': session_token
+        }
+        response = self.client.post(self.ANSWERS_ENDPOINT, data=answer_2, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        response_json = response.json()
+        self.assertEqual(response_json['key'], 'q_yes')
+        self.assertEqual(response_json['answer'], answer_2['answer'])
+        self.assertEqual(response_json['session_token'], answer_2['session_token'])
+        self.assertEqual(response_json['next_key'], None)  # means we reached the end of questionnaire
+        self.assertEqual(response_json['label'], self.q_yes.payload['shortLabel'])
+
+        # some database level checks
+        self.assertEqual(Answer.objects.count(), 2)
+        self.assertEqual(QASession.objects.count(), 1)
+        # ----------------------
+        # ----------------------
+
+        response = self.client.get(self.QA_SESSION_ANSWERS_ENDPOINT.format(uuid=session_token))
+        self.assertEqual(response.status_code, 200)
+
+    def test_get_questions(self):
+        session = QASession.objects.create(first_question=self.q_start)
+        questions = QASessionService.get_questions(session.token)
+        self.assertEqual(len(questions), 3)
+
+    def test_get_questions_cyclical(self):
+        # create cyclical references
+        q_a = Q2.objects.create(
+            field_type='plain_text',
+            path='extra_properties.a',
+            key='a',
+            payload={
+                'shortLabel': 'Question A?',
+                'label': 'Question A?',
+                'next': [{'key': 'b'}],
+            }
+        )
+
+        Q2.objects.create(
+            field_type='plain_text',
+            path='extra_properties.',
+            key='b',
+            payload={
+                'shortLabel': 'Question B?',
+                'label': 'Question B?',
+                'next': [{'key': 'a'}],
+            }
+        )
+
+        # check that we only get two questions back
+        session = QASession.objects.create(first_question=q_a)
+        questions = QASessionService.get_questions(session.token)
+        self.assertEqual(len(questions), 2)
