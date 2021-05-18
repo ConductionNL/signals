@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (C) 2019 - 2021 Gemeente Amsterdam
-from signals.apps.api.views.answer import PublicQASessionViewSet, PublicAnswerViewSet
+from signals.apps.api.views.answer import PublicAnswerViewSet, PublicQASessionViewSet
 from signals.apps.api.views.area import PrivateAreasViewSet, PublicAreasViewSet
 from signals.apps.api.views.attachment import (
     PrivateSignalAttachmentsViewSet,

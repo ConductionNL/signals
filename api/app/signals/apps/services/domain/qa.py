@@ -23,11 +23,7 @@ class QASessionService:
 
         # Make sure we can tie our answer to an QASession:
         if session_token:
-            try:
-                session = QASession.objects.get(token=session_token)
-            except QASession.DoesNotExist:
-                msg = f'QASession referenced by token={session_token} does not exist!'
-                raise ValidationError(msg)
+            session = QASessionService.get_qa_session(session_token)
         else:
             # We are receiving answers, so mark our QASession as started
             # right away and add a pointer to the first question in the
@@ -67,3 +63,37 @@ class QASessionService:
         )
 
         return answer
+
+    @staticmethod
+    def get_qa_session(session_token):
+        try:
+            session = QASession.objects.get(token=session_token)
+        except QASession.DoesNotExist:
+            msg = f'QASession referenced by token={session_token} does not exist!'
+            raise ValidationError(msg)
+        return session
+
+    # flake8: noqa
+    @staticmethod
+    def get_answers(session_token):
+        """
+        Retrieve all answers associated with a QASession, return queryset.
+        """
+        session = QASessionService.get_qa_session(session_token)
+
+        # Postgres only: https://docs.djangoproject.com/en/3.2/ref/models/querysets/#distinct
+        # We want the most recent answer per unique question (in effect letting
+        # clients overwrite questions).
+        answers = list(Answer.objects.filter(session=session).order_by('question_id').distinct('question_id'))
+        question_ids = [answer.question_id for answer in answers]
+        questions = Q2.objects.filter(id__in=question_ids)
+
+        answer_cache = {a.key: a for a in answers}
+        question_cache = {q.key: q for q in questions}
+
+        assert session.first_question.id in question_cache  # protects prepared QASeesions against random answers
+        current_question = session.first_question
+        current_key = session.first_question.key
+        current_answer = None
+
+        # TODO: this must only return reachable questions

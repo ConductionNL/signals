@@ -5,11 +5,7 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
 
-from signals.apps.api.serializers import (
-    AnswerDeserializer,
-    AnswerSerializer,
-    QASessionSerializer
-)
+from signals.apps.api.serializers import AnswerDeserializer, AnswerSerializer, QASessionSerializer
 from signals.apps.services.domain.qa import QASessionService
 from signals.apps.signals.models import QASession
 

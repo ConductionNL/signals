@@ -372,3 +372,14 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         }
         response = self.client.post(self.ANSWERS_ENDPOINT, data=answer, format='json')
         self.assertEqual(response.status_code, 400)
+
+    def test_answers_query(self):
+        session = None
+        qs = Answer.objects.filter(session=session).order_by('question_id').distinct('question_id')  # noqa
+
+    def test_get_answers(self):
+        # Make sure we get only the most recent answers when we repeat answers.
+        # TBD: do we only return "reachable" questions (i.e. those that are in
+        # the chain of questions and answers starting at
+        # QASession.first_question).
+        pass
