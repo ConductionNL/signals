@@ -382,4 +382,62 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         # TBD: do we only return "reachable" questions (i.e. those that are in
         # the chain of questions and answers starting at
         # QASession.first_question).
-        pass
+        from signals.apps.services.domain.qa import QASessionService
+
+        # ----------------------
+        # ------ REFACTOR ME ---
+        self.assertEqual(QASession.objects.count(), 0)
+
+        # Retrieve the first question
+        response = self.client.get(f'{self.QUESTIONS_ENDPOINT}?key=q_yesno')
+        self.assertEqual(response.status_code, 200)
+
+        response_json = response.json()
+        self.assertEqual(response_json['count'], 1)  # we expect one question (key is unique and exists)
+        question_json = response_json['results'][0]
+
+        # answer it
+        answer = {
+            'key': question_json['key'],
+            'answer': 'yes',
+            'session': None,
+        }
+        response = self.client.post(self.ANSWERS_ENDPOINT, data=answer, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        response_json = response.json()
+        self.assertEqual(response_json['key'], 'q_yesno')
+        self.assertEqual(response_json['answer'], 'yes')
+        self.assertEqual(response_json['next_key'], 'q_yes')
+        self.assertIn('session_token', response_json)
+        session_token = response_json['session_token']
+
+        # retrieve second question:
+        next_key = response_json['next_key']
+        response = self.client.get(f'{self.QUESTIONS_ENDPOINT}?key={next_key}')
+        self.assertEqual(response.status_code, 200)
+
+        # answer it
+        answer_2 = {
+            'key': next_key,
+            'answer': 'Yes happy now!',
+            'session_token': session_token
+        }
+        response = self.client.post(self.ANSWERS_ENDPOINT, data=answer_2, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        response_json = response.json()
+        self.assertEqual(response_json['key'], 'q_yes')
+        self.assertEqual(response_json['answer'], answer_2['answer'])
+        self.assertEqual(response_json['session_token'], answer_2['session_token'])
+        self.assertEqual(response_json['next_key'], None)  # means we reached the end of questionnaire
+        self.assertEqual(response_json['label'], self.q_yes.payload['shortLabel'])
+
+        # some database level checks
+        self.assertEqual(Answer.objects.count(), 2)
+        self.assertEqual(QASession.objects.count(), 1)
+        # ----------------------
+        # ----------------------
+
+        answers = QASessionService.get_answers(session_token)
+        self.assertEqual(len(answers), 2)

@@ -8,6 +8,8 @@ from rest_framework.exceptions import ValidationError
 
 from signals.apps.signals.models import Q2, Answer, QASession
 
+N_MAX_QUESTIONS_PER_QUESTIONNAIRE = 100
+
 
 class QASessionService:
     @staticmethod
@@ -73,27 +75,46 @@ class QASessionService:
             raise ValidationError(msg)
         return session
 
-    # flake8: noqa
     @staticmethod
     def get_answers(session_token):
         """
-        Retrieve all answers associated with a QASession, return queryset.
+        Retrieve all answers associated with a QASession, return list.
         """
         session = QASessionService.get_qa_session(session_token)
 
         # Postgres only: https://docs.djangoproject.com/en/3.2/ref/models/querysets/#distinct
         # We want the most recent answer per unique question (in effect letting
         # clients overwrite questions).
-        answers = list(Answer.objects.filter(session=session).order_by('question_id').distinct('question_id'))
-        question_ids = [answer.question_id for answer in answers]
-        questions = Q2.objects.filter(id__in=question_ids)
+        all_answers = list(
+            Answer.objects.filter(session=session)
+                .order_by('question_id')
+                .distinct('question_id')
+                .select_related('question')
+        )
+        all_question_ids = [answer.question_id for answer in all_answers]
 
-        answer_cache = {a.key: a for a in answers}
-        question_cache = {q.key: q for q in questions}
+        # We do not want to repeatedly hit the database, hence we cache the answers.
+        answer_cache = {a.question.key: a for a in all_answers}
+        assert session.first_question.id in all_question_ids  # protects prepared QASeesions against random answers
 
-        assert session.first_question.id in question_cache  # protects prepared QASeesions against random answers
-        current_question = session.first_question
-        current_key = session.first_question.key
-        current_answer = None
+        answers = []
+        current_answer = answer_cache.get(session.first_question.key, None)
 
-        # TODO: this must only return reachable questions
+        while current_answer:
+            answers.append(current_answer)
+            next_key = current_answer.question.get_next_key(current_answer.answer)
+
+            current_answer = answer_cache.get(next_key, None)
+
+        return answers
+
+    # flake8: noqa
+    @staticmethod
+    def get_questions(session_token):
+        """
+        Retrieve all questions associated with a QASession, return list.
+        """
+        session = QASessionService.get_qa_session(session_token)
+
+        first_question = session.first_question
+        # !!! protect against cycles!

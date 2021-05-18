@@ -56,3 +56,10 @@ class Q2(models.Model):
             if answer_data == item['answer']:
                 return item['key']
         return None
+
+    def get_potential_next_keys(self):
+        """
+        Find all potential next questions.
+        """
+        payload_next = self.payload.get('next', [])
+        return [item['key'] for item in payload_next]
