@@ -6,9 +6,8 @@ from datetime import timedelta
 from django.utils import timezone
 from freezegun import freeze_time
 
-# TODO: replace Q2 with Question
-from signals.apps.services.domain.qa import QASessionService
-from signals.apps.signals.models import Q2, Answer, QASession
+from signals.apps.qa.models import Answer, QASession, Question
+from signals.apps.qa.services import QASessionService
 from tests.test import SignalsBaseApiTestCase
 
 PLAIN_TEXT_TEMPLATE = {
@@ -19,24 +18,24 @@ PLAIN_TEXT_TEMPLATE = {
 
 
 class TestQuestionnaire(SignalsBaseApiTestCase):
-    private_q2_list_endpoint = '/signals/v1/private/q2s/'
-    private_q2_detail_endpoint = '/signals/v1/private/q2s/{pk}/'
+    private_question_list_endpoint = '/signals/v1/private/questions2/'
+    private_question_detail_endpoint = '/signals/v1/private/questions2/{pk}/'
 
     def setUp(self):
         self.client.force_authenticate(user=self.superuser)
 
     def test_create_question_plain_text(self):
-        self.assertEqual(Q2.objects.count(), 0)
+        self.assertEqual(Question.objects.count(), 0)
 
         data = {
             'field_type': 'plain_text',
             'path': 'extra_properties',
         }
-        url = self.private_q2_list_endpoint
+        url = self.private_question_list_endpoint
 
         response = self.client.post(url, data=data, format='json')
         self.assertEqual(response.status_code, 201)
-        self.assertEqual(Q2.objects.count(), 1)
+        self.assertEqual(Question.objects.count(), 1)
 
         response_json = response.json()
         self.assertIn('uuid', response_json)
@@ -45,7 +44,7 @@ class TestQuestionnaire(SignalsBaseApiTestCase):
         self.assertIn('required', response_json)
 
     def test_update_question_plain_text(self):
-        q2 = Q2.objects.create(
+        question = Question.objects.create(
             key='test_question',
             field_type='plain_text',
             path='extra_properties',
@@ -60,17 +59,17 @@ class TestQuestionnaire(SignalsBaseApiTestCase):
                 'label': 'lang label',
             },
         }
-        url = self.private_q2_detail_endpoint.format(pk=q2.id)
+        url = self.private_question_detail_endpoint.format(pk=question.id)
 
         response = self.client.patch(url, data=data, format='json')
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(Q2.objects.count(), 1)
+        self.assertEqual(Question.objects.count(), 1)
 
         response_json = response.json()
         self.assertIsInstance(response_json['payload'], dict)
 
-        q2.refresh_from_db()
-        self.assertEqual(q2.payload, data['payload'])
+        question.refresh_from_db()
+        self.assertEqual(question.payload, data['payload'])
 
     def test_next_field(self):
         next_none = {}
@@ -85,7 +84,7 @@ class TestQuestionnaire(SignalsBaseApiTestCase):
                 'next': [{'key': 'next_question_a', 'answer': 'A'}]
         }
 
-        Q2.objects.create(
+        Question.objects.create(
             key='test_question_1',
             field_type='plain_text',
             payload=next_none,
@@ -93,7 +92,7 @@ class TestQuestionnaire(SignalsBaseApiTestCase):
             path='PLACEHOLDER',
         )
 
-        Q2.objects.create(
+        Question.objects.create(
             key='test_question_2',
             field_type='plain_text',
             payload=next_unconditional,
@@ -101,7 +100,7 @@ class TestQuestionnaire(SignalsBaseApiTestCase):
             path='PLACEHOLDER',
         )
 
-        Q2.objects.create(
+        Question.objects.create(
             key='test_question_3',
             field_type='plain_text',
             payload=next_conditional,
@@ -111,14 +110,14 @@ class TestQuestionnaire(SignalsBaseApiTestCase):
 
 
 class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
-    QUESTIONS_ENDPOINT = '/signals/v1/public/q2s/'
+    QUESTIONS_ENDPOINT = '/signals/v1/public/questions2/'
     ANSWERS_ENDPOINT = '/signals/v1/public/answers/'
     QA_SESSIONS_ENDPOINT = '/signals/v1/public/qa-sessions/{uuid}/'
     QA_SESSION_ANSWERS_ENDPOINT = '/signals/v1/public/qa-sessions/{uuid}/answers/'
     QA_SESSION_QUESTIONS_ENDPOINT = '/signals/v1/public/qa-sessions/{uuid}/questions/'
 
     def setUp(self):
-        self.q_start = Q2.objects.create(
+        self.q_start = Question.objects.create(
             field_type='plain_text',
             path='extra_properties.a',
             key='q_yesno',
@@ -132,7 +131,7 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
             }
         )
 
-        self.q_yes = Q2.objects.create(
+        self.q_yes = Question.objects.create(
             field_type='plain_text',
             path='extra_properties.b',
             key='q_yes',
@@ -142,7 +141,7 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
             }
         )
 
-        self.q_no = Q2.objects.create(
+        self.q_no = Question.objects.create(
             field_type='plain_text',
             path='extra_properties.c',
             key='q_no',
@@ -510,7 +509,7 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
 
     def test_get_questions_cyclical(self):
         # create cyclical references
-        q_a = Q2.objects.create(
+        q_a = Question.objects.create(
             field_type='plain_text',
             path='extra_properties.a',
             key='a',
@@ -521,7 +520,7 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
             }
         )
 
-        Q2.objects.create(
+        Question.objects.create(
             field_type='plain_text',
             path='extra_properties.',
             key='b',

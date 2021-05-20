@@ -1,19 +1,50 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (C) 2020 - 2021 Vereniging van Nederlandse Gemeenten, Gemeente Amsterdam
+# Copyright (C) 2021 Gemeente Amsterdam
+from datapunt_api.rest import HALPagination
 from django.utils import timezone
+from django_filters.rest_framework import DjangoFilterBackend, FilterSet, filters
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
 
-from signals.apps.api.serializers import (
+from signals.apps.api.generics import mixins
+from signals.apps.qa.models import QASession, Question
+from signals.apps.qa.serializers import (
     AnswerDeserializer,
     AnswerSerializer,
-    PrivateQ2SerializerDetail,
+    PrivateQuestionSerializerDetail2,
     QASessionSerializer
 )
-from signals.apps.services.domain.qa import QASessionService
-from signals.apps.signals.models import QASession
+from signals.apps.qa.services import QASessionService
+
+
+class QuestionFilterSet(FilterSet):
+    uuid = filters.UUIDFilter(field_name='uuid')
+    key = filters.CharFilter(field_name='key')
+
+
+class PrivateQuestionViewSet2(mixins.RetrieveModelMixin, mixins.CreateModelMixin, mixins.ListModelMixin,
+                              mixins.UpdateModelMixin, viewsets.GenericViewSet,):
+    queryset = Question.objects.order_by('-id')
+
+    serializer_class = PrivateQuestionSerializerDetail2
+    serializer_detail_class = PrivateQuestionSerializerDetail2
+    pagination_class = HALPagination
+
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = QuestionFilterSet
+
+
+class PublicQuestionViewSet2(mixins.RetrieveModelMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+    queryset = Question.objects.order_by('-id')
+
+    serializer_class = PrivateQuestionSerializerDetail2  # TODO: replace with public version?
+    serializer_detail_class = PrivateQuestionSerializerDetail2
+    pagination_class = HALPagination
+
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = QuestionFilterSet
 
 
 class PublicAnswerViewSet(viewsets.ViewSet):
@@ -65,6 +96,6 @@ class PublicQASessionViewSet(viewsets.ViewSet):
                 return Response(status=HTTP_404_NOT_FOUND)  # TODO: add proper body
 
         questions = QASessionService.get_questions(answer_session.token)
-        out = PrivateQ2SerializerDetail(questions, many=True).data
+        out = PrivateQuestionSerializerDetail2(questions, many=True).data
 
         return Response(out, status=HTTP_200_OK)

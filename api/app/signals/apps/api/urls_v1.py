@@ -12,15 +12,11 @@ from signals.apps.api.views import (
     PrivateCsvViewSet,
     PrivateDepartmentViewSet,
     PrivateExpressionViewSet,
-    PrivateQ2ViewSet,
     PrivateSignalAttachmentsViewSet,
     PrivateSignalViewSet,
     PrivateSourcesViewSet,
-    PublicAnswerViewSet,
     PublicAreasViewSet,
     PublicCategoryViewSet,
-    PublicQ2ViewSet,
-    PublicQASessionViewSet,
     PublicQuestionViewSet,
     PublicSignalAttachmentsViewSet,
     PublicSignalMapViewSet,
@@ -32,6 +28,12 @@ from signals.apps.api.views import (
     StoredSignalFilterViewSet
 )
 from signals.apps.feedback.views import FeedbackViewSet, StandardAnswerViewSet
+from signals.apps.qa.views import (
+    PrivateQuestionViewSet2,
+    PublicAnswerViewSet,
+    PublicQASessionViewSet,
+    PublicQuestionViewSet2
+)
 from signals.apps.search.views import SearchView
 from signals.apps.users.v1.views import (
     AutocompleteUsernameListView,
@@ -49,7 +51,7 @@ public_router.register(r'public/feedback/forms', FeedbackViewSet, basename='feed
 public_router.register(r'public/areas', PublicAreasViewSet, basename='public-areas')
 public_router.register(r'public/answers', PublicAnswerViewSet, basename='public-answers')
 public_router.register(r'public/qa-sessions', PublicQASessionViewSet, basename='public-qa-sessions')
-public_router.register(r'public/q2s', PublicQ2ViewSet, basename='public-questions')
+public_router.register(r'public/questions2', PublicQuestionViewSet2, basename='public-questions')
 
 public_categories = public_router.register(r'public/terms/categories', PublicCategoryViewSet,
                                            basename='public-maincategory')
@@ -74,7 +76,7 @@ private_router.register(r'private/areas', PrivateAreasViewSet, basename='private
 private_router.register(r'private/expressions', PrivateExpressionViewSet, basename='private-expression')
 private_router.register(r'private/sources', PrivateSourcesViewSet, basename='private-sources')
 private_router.register(r'private/csv', PrivateCsvViewSet, basename='private-csv')
-private_router.register(r'private/q2s', PrivateQ2ViewSet, basename='private-questions')
+private_router.register(r'private/questions2', PrivateQuestionViewSet2, basename='private-questions')
 
 # Combined API
 base_router = SignalsRouterVersion1()

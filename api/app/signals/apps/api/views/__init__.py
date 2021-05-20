@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (C) 2019 - 2021 Gemeente Amsterdam
-from signals.apps.api.views.answer import PublicAnswerViewSet, PublicQASessionViewSet
 from signals.apps.api.views.area import PrivateAreasViewSet, PublicAreasViewSet
 from signals.apps.api.views.attachment import (
     PrivateSignalAttachmentsViewSet,
@@ -15,7 +14,6 @@ from signals.apps.api.views.expression import PrivateExpressionViewSet
 from signals.apps.api.views.ml_tool_proxy import LegacyMlPredictCategoryView
 from signals.apps.api.views.namespace import NamespaceView
 from signals.apps.api.views.pdf import GeneratePdfView
-from signals.apps.api.views.q2 import PrivateQ2ViewSet, PublicQ2ViewSet
 from signals.apps.api.views.questions import PublicQuestionViewSet
 from signals.apps.api.views.signal import (
     PrivateSignalViewSet,
@@ -29,8 +27,6 @@ from signals.apps.api.views.status_message_template import StatusMessageTemplate
 from signals.apps.api.views.stored_signal_filter import StoredSignalFilterViewSet
 
 __all__ = (
-    'PublicQASessionViewSet',
-    'PublicAnswerViewSet',
     'PublicSignalAttachmentsViewSet',
     'PrivateSignalAttachmentsViewSet',
     'PublicSignalMapViewSet',
@@ -41,8 +37,6 @@ __all__ = (
     'PrivateCategoryViewSet',
     'PrivateCsvViewSet',
     'PublicQuestionViewSet',
-    'PrivateQ2ViewSet',
-    'PublicQ2ViewSet',
     # 'MlPredictCategoryView',  # disabled for now
     'LegacyMlPredictCategoryView',
     'NamespaceView',

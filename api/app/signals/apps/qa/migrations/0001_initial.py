@@ -8,18 +8,21 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
+    initial = True
+
     dependencies = [
-        ('signals', '0140_category_note'),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='Q2',
+            name='Question',
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('key', models.CharField(blank=True, max_length=255, null=True, unique=True)),
                 ('uuid', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-                ('field_type', models.CharField(choices=[('plain_text', 'PlainText')], max_length=255)),
+                ('field_type', models.CharField(
+                    choices=[('integer', 'Integer'), ('plain_text', 'PlainText')], max_length=255
+                )),
                 ('payload', models.JSONField(blank=True, null=True)),
                 ('required', models.BooleanField(default=False)),
                 ('path', models.CharField(max_length=255)),
@@ -34,10 +37,9 @@ class Migration(migrations.Migration):
                 ('started_at', models.DateTimeField(null=True)),
                 ('ttl_seconds', models.IntegerField(default=7200)),
                 ('token', models.UUIDField(default=uuid.uuid4, editable=False, unique=True)),
-                (
-                    'first_question',
-                    models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='signals.q2')
-                ),
+                ('first_question', models.ForeignKey(
+                    null=True, on_delete=django.db.models.deletion.CASCADE, to='qa.question'
+                )),
             ],
             options={
                 'ordering': ('-created_at',),
@@ -50,15 +52,10 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('answer', models.JSONField()),
                 ('label', models.CharField(max_length=255)),
-                ('question', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='signals.q2')),
-                (
-                    'session',
-                    models.ForeignKey(
-                        null=True,
-                        on_delete=django.db.models.deletion.CASCADE,
-                        to='signals.QASession'
-                    )
-                ),
+                ('question', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='qa.question')),
+                ('session', models.ForeignKey(
+                    null=True, on_delete=django.db.models.deletion.CASCADE, to='qa.qasession'
+                )),
             ],
             options={
                 'ordering': ('-created_at',),

@@ -6,7 +6,7 @@ from django.core.exceptions import ValidationError as django_validation_error
 from django.utils import timezone
 from rest_framework.exceptions import ValidationError
 
-from signals.apps.signals.models import Q2, Answer, QASession
+from signals.apps.qa.models import Answer, QASession, Question
 
 N_MAX_QUESTIONS_PER_QUESTIONNAIRE = 100
 
@@ -18,8 +18,8 @@ class QASessionService:
         Check references, check answer validity, create Answer instance.
         """
         try:
-            q2 = Q2.objects.get(key=key)
-        except Q2.DoesNotExist:
+            question = Question.objects.get(key=key)
+        except Question.DoesNotExist:
             msg = f'No question with key={key} exists.'
             raise ValidationError(msg)
 
@@ -30,7 +30,7 @@ class QASessionService:
             # We are receiving answers, so mark our QASession as started
             # right away and add a pointer to the first question in the
             # questionnaire.
-            session = QASession(started_at=timezone.now(), first_question=q2)
+            session = QASession(started_at=timezone.now(), first_question=question)
             session.save()
 
         # Mark our QASession as started (in case it was prepared before)
@@ -49,19 +49,19 @@ class QASessionService:
             msg = f'QASession referenced by token={session_token} does not exist!'
             raise ValidationError(msg)
 
-        # Check that the answer we received matches the referenced Q2 object.
+        # Check that the answer we received matches the referenced Question object.
         try:
-            q2.validate_submission(answer)
+            question.validate_submission(answer)
         except django_validation_error:
             msg = 'Answer is not valid.'
             raise ValidationError(msg)
 
         # Finally create an answer in the DB
         answer = Answer.objects.create(
-            question=q2,
+            question=question,
             answer=answer,
             session=session,
-            label=q2.payload['shortLabel'],
+            label=question.payload['shortLabel'],
         )
 
         return answer
@@ -126,7 +126,7 @@ class QASessionService:
 
         while to_visit:
             key = to_visit.pop()
-            question = Q2.objects.get(key=key)  # can raise ...
+            question = Question.objects.get(key=key)  # can raise ...
             all_questions[key] = question
 
             next_keys = question.get_all_next_keys()

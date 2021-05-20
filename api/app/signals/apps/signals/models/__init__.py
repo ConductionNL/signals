@@ -1,6 +1,5 @@
 # SPDX-License-Identifier: MPL-2.0
 # Copyright (C) 2019 - 2021 Gemeente Amsterdam
-from signals.apps.signals.models.answer import Answer, QASession
 from signals.apps.signals.models.area import Area, AreaType
 from signals.apps.signals.models.attachment import Attachment
 from signals.apps.signals.models.buurt import Buurt
@@ -29,7 +28,6 @@ from signals.apps.signals.models.mixins import CreatedUpdatedModel
 from signals.apps.signals.models.note import Note
 from signals.apps.signals.models.priority import Priority
 # current POC relating to backend defined questions
-from signals.apps.signals.models.q2 import Q2
 from signals.apps.signals.models.question import Question
 from signals.apps.signals.models.reporter import Reporter
 from signals.apps.signals.models.routing_expression import RoutingExpression
@@ -45,8 +43,6 @@ from signals.apps.signals.models.type import Type
 
 # Satisfy Flake8 (otherwise complaints about unused imports):
 __all__ = [
-    'Answer',
-    'QASession',
     'Area',
     'AreaType',
     'Attachment',
@@ -78,7 +74,6 @@ __all__ = [
     'Note',
     'Question',
     'Priority',
-    'Q2',
     'Reporter',
     'Signal',
     'ServiceLevelObjective',

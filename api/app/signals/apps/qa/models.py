@@ -1,14 +1,16 @@
 # SPDX-License-Identifier: MPL-2.0
-# Copyright (C) 2020 - 2021 Gemeente Amsterdam
+# Copyright (C) 2021 Gemeente Amsterdam
 import uuid
 
 from django.contrib.gis.db import models
 from django.core.exceptions import ValidationError
 
-from signals.apps.signals.models.q2_fieldtypes import field_type_choices, get_field_type_class
+from signals.apps.qa.question_fieldtypes import field_type_choices, get_field_type_class
+
+ANSWER_SESSION_TTL = 2 * 60 * 60  # Two hours default
 
 
-class Q2(models.Model):
+class Question(models.Model):
     key = models.CharField(unique=True, max_length=255, null=True, blank=True)
     uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
@@ -63,3 +65,32 @@ class Q2(models.Model):
         """
         payload_next = self.payload.get('next', [])
         return [item['key'] for item in payload_next]
+
+
+class Answer(models.Model):
+    created_at = models.DateTimeField(editable=False, auto_now_add=True)
+
+    session = models.ForeignKey('QASession', on_delete=models.CASCADE, null=True)
+    question = models.ForeignKey('Question', on_delete=models.CASCADE)
+    answer = models.JSONField()
+
+    label = models.CharField(max_length=255)
+
+    class Meta:
+        ordering = ('-created_at',)
+
+
+class QASession(models.Model):
+    created_at = models.DateTimeField(editable=False, auto_now_add=True)
+    submit_before = models.DateTimeField(blank=True, null=True)
+    first_question = models.ForeignKey('Question', on_delete=models.CASCADE, null=True)
+
+    started_at = models.DateTimeField(null=True)
+    ttl_seconds = models.IntegerField(default=ANSWER_SESSION_TTL)
+    # TODO: add a created_by ...
+
+    token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+
+    # TODO: add "is_frozen"
+    class Meta:
+        ordering = ('-created_at',)

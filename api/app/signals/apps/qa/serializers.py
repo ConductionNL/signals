@@ -2,6 +2,15 @@
 # Copyright (C) 2021 Gemeente Amsterdam
 from rest_framework import serializers
 
+from signals.apps.qa.models import Question
+
+
+class PrivateQuestionSerializerDetail2(serializers.ModelSerializer):
+    class Meta:
+        model = Question
+        fields = '__all__'
+        read_only_fields = ('uuid',)
+
 
 class AnswerSerializer(serializers.Serializer):
     """
