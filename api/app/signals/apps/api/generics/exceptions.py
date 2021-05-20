@@ -3,10 +3,17 @@
 from django.utils.translation import gettext_lazy as _
 from rest_framework.exceptions import APIException
 from rest_framework.status import (
+    HTTP_410_GONE,
     HTTP_412_PRECONDITION_FAILED,
     HTTP_501_NOT_IMPLEMENTED,
     HTTP_504_GATEWAY_TIMEOUT
 )
+
+
+class Gone(APIException):
+    status_code = HTTP_410_GONE
+    default_detail = 'Gone'
+    default_code = 'gone'
 
 
 class PreconditionFailed(APIException):

@@ -67,6 +67,9 @@ INSTALLED_APPS = [
     'signals.apps.search',
     'signals.apps.dataset',
 
+    # Questionnaire
+    'signals.apps.questionnaire',
+
     'change_log',
 
     # Third party

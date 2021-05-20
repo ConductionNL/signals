@@ -13,6 +13,9 @@ urlpatterns = [
 
     # SOAP stand-in endpoints
     path('signals/sigmax/', include('signals.apps.sigmax.urls')),
+
+    # Questionnaire
+    path('signals/v1/public/', include('signals.apps.questionnaire.urls')),
 ]
 
 if settings.DEBUG:
