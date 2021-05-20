@@ -6,7 +6,12 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_404_NOT_FOUND
 
-from signals.apps.api.serializers import AnswerDeserializer, AnswerSerializer, QASessionSerializer
+from signals.apps.api.serializers import (
+    AnswerDeserializer,
+    AnswerSerializer,
+    PrivateQ2SerializerDetail,
+    QASessionSerializer
+)
 from signals.apps.services.domain.qa import QASessionService
 from signals.apps.signals.models import QASession
 
@@ -48,5 +53,18 @@ class PublicQASessionViewSet(viewsets.ViewSet):
 
         answers = QASessionService.get_answers(answer_session.token)
         out = AnswerSerializer(answers, many=True).data
+
+        return Response(out, status=HTTP_200_OK)
+
+    @action(detail=True, url_path=r'questions/?$')
+    def questions(self, request, pk=None):
+        # TODO: consider wether we want this exposed (or should we only )
+        answer_session = QASession.objects.get(token=pk)
+        if answer_session.submit_before is not None:
+            if answer_session.submit_before <= timezone.now():
+                return Response(status=HTTP_404_NOT_FOUND)  # TODO: add proper body
+
+        questions = QASessionService.get_questions(answer_session.token)
+        out = PrivateQ2SerializerDetail(questions, many=True).data
 
         return Response(out, status=HTTP_200_OK)

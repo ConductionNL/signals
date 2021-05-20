@@ -18,6 +18,7 @@ class QASession(models.Model):
 
     token = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
 
+    # TODO: add "is_frozen"
     class Meta:
         ordering = ('-created_at',)
 

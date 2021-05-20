@@ -126,7 +126,7 @@ class QASessionService:
 
         while to_visit:
             key = to_visit.pop()
-            question = Q2.objects.get(key=key)  # this can raise ...
+            question = Q2.objects.get(key=key)  # can raise ...
             all_questions[key] = question
 
             next_keys = question.get_all_next_keys()
@@ -137,14 +137,23 @@ class QASessionService:
         return all_questions.values()
 
     @staticmethod
-    def as_extra_properties(session_token):
+    def get_extra_properties(session_token):
+        """
+        Create old-style extra_properties from the answers associated with a QASession.
+
+        Note:
+        The category_url is not known in general, so it is not added here. Caller is
+        has the responsibility to overwrite the category_url property.
+        """
         answers = QASessionService.get_answers(session_token)
 
         extra_properties = []
         for answer in answers:
             props = {
                 'id': answer.question.key,
-                # TODO add correct payload
+                'label': answer.label,
+                'answer': answer.answer,
+                'category_url': 'PLACEHOLDER',
             }
             extra_properties.append(props)
 

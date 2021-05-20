@@ -115,6 +115,7 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
     ANSWERS_ENDPOINT = '/signals/v1/public/answers/'
     QA_SESSIONS_ENDPOINT = '/signals/v1/public/qa-sessions/{uuid}/'
     QA_SESSION_ANSWERS_ENDPOINT = '/signals/v1/public/qa-sessions/{uuid}/answers/'
+    QA_SESSION_QUESTIONS_ENDPOINT = '/signals/v1/public/qa-sessions/{uuid}/questions/'
 
     def setUp(self):
         self.q_start = Q2.objects.create(
@@ -535,3 +536,42 @@ class TestQuestionAnswerFlow(SignalsBaseApiTestCase):
         session = QASession.objects.create(first_question=q_a)
         questions = QASessionService.get_questions(session.token)
         self.assertEqual(len(questions), 2)
+
+    def test_get_questions_api(self):
+        # ----------------------
+        # ------ REFACTOR ME ---
+        self.assertEqual(QASession.objects.count(), 0)
+
+        # Retrieve the first question
+        response = self.client.get(f'{self.QUESTIONS_ENDPOINT}?key=q_yesno')
+        self.assertEqual(response.status_code, 200)
+
+        response_json = response.json()
+        self.assertEqual(response_json['count'], 1)  # we expect one question (key is unique and exists)
+        question_json = response_json['results'][0]
+
+        # answer it
+        answer = {
+            'key': question_json['key'],
+            'answer': 'yes',
+            'session': None,
+        }
+        response = self.client.post(self.ANSWERS_ENDPOINT, data=answer, format='json')
+        self.assertEqual(response.status_code, 201)
+
+        response_json = response.json()
+        self.assertEqual(response_json['key'], 'q_yesno')
+        self.assertEqual(response_json['answer'], 'yes')
+        self.assertEqual(response_json['next_key'], 'q_yes')
+        self.assertIn('session_token', response_json)
+        session_token = response_json['session_token']
+
+        # ----------------------
+        # ----------------------
+
+        # get the questions
+        response = self.client.get(self.QA_SESSION_QUESTIONS_ENDPOINT.format(uuid=session_token))
+        self.assertEqual(response.status_code, 200)
+
+        response_json = response.json()
+        self.assertEqual(len(response_json), 3)
